@@ -8,7 +8,7 @@ router.get('/', async (req, res) => {
     try {
         const questions = type
             ? await QuestionRepository.findByTypePaginated(type, page, limit)
-            : await QuestionRepository.findAllPaginated(page, limit);
+            : await QuestionRepository.findAllWithDetailsPaginated(page, limit);
         res.json(questions);
     } catch (error) {
         res.status(500).json({ error: 'Internal server error' });
