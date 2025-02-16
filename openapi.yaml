@@ -1,0 +1,262 @@
+openapi: 3.0.0
+info:
+    title: Quiz API
+    description: クイズアプリケーションのRESTful API
+    version: 1.0.0
+servers:
+    - url: http://localhost:4000/api
+      description: 開発サーバー
+
+components:
+    schemas:
+        Question:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+                text:
+                    type: string
+                    description: 問題文
+                type:
+                    type: string
+                    enum: [multiple_choice, text]
+                    description: 問題タイプ
+                choices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Choice'
+                explanation_text:
+                    type: string
+                    description: 解説文
+                created_at:
+                    type: string
+                    format: date-time
+                updated_at:
+                    type: string
+                    format: date-time
+
+        Choice:
+            type: object
+            properties:
+                id:
+                    type: integer
+                    format: int64
+                text:
+                    type: string
+                    description: 選択肢のテキスト
+                is_correct:
+                    type: boolean
+                    description: 正解かどうか
+
+        Error:
+            type: object
+            properties:
+                error:
+                    type: string
+                    description: エラーメッセージ
+                message:
+                    type: string
+                    description: 詳細なエラー情報（開発環境のみ）
+
+paths:
+    /questions:
+        get:
+            summary: 問題一覧の取得
+            description: 全ての問題と関連する統計情報を取得します
+            parameters:
+                - name: page
+                  in: query
+                  schema:
+                      type: integer
+                      default: 1
+                  description: ページ番号
+                - name: limit
+                  in: query
+                  schema:
+                      type: integer
+                      default: 10
+                  description: 1ページあたりの件数
+            responses:
+                '200':
+                    description: 成功
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/Question'
+                                    pagination:
+                                        type: object
+                                        properties:
+                                            total:
+                                                type: integer
+                                            page:
+                                                type: integer
+                                            limit:
+                                                type: integer
+                                            totalPages:
+                                                type: integer
+                '500':
+                    description: サーバーエラー
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+        post:
+            summary: 新しい問題の作成
+            description: 新しい問題を作成します
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - text
+                                - type
+                            properties:
+                                text:
+                                    type: string
+                                type:
+                                    type: string
+                                    enum: [multiple_choice, text]
+            responses:
+                '201':
+                    description: 作成成功
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    id:
+                                        type: integer
+                                        format: int64
+                '400':
+                    description: 不正なリクエスト
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    description: サーバーエラー
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /questions/{id}:
+        get:
+            summary: 特定の問題の取得
+            description: 指定されたIDの問題と選択肢を取得します
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      format: int64
+            responses:
+                '200':
+                    description: 成功
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Question'
+                '404':
+                    description: 問題が見つかりません
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    description: サーバーエラー
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+        put:
+            summary: 問題の更新
+            description: 指定されたIDの問題を更新します
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      format: int64
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required:
+                                - text
+                                - type
+                            properties:
+                                text:
+                                    type: string
+                                type:
+                                    type: string
+                                    enum: [multiple_choice, text]
+            responses:
+                '200':
+                    description: 更新成功
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: 問題が見つかりません
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    description: サーバーエラー
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+        delete:
+            summary: 問題の削除
+            description: 指定されたIDの問題を削除します（関連する選択肢と回答も削除）
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+                      format: int64
+            responses:
+                '200':
+                    description: 削除成功
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    message:
+                                        type: string
+                '404':
+                    description: 問題が見つかりません
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '500':
+                    description: サーバーエラー
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'

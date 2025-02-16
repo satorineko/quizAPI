@@ -4,23 +4,36 @@ class BaseRepository {
         this.db = require('./DBConnection');
     }
 
+    async getConnection() {
+        return await this.db.getConnection();
+    }
+
     async findAll() {
-        return await this.db.query(`SELECT * FROM ${this.tableName}`);
+        const connection = await this.getConnection();
+        const [rows] = await connection.query(
+            `SELECT * FROM ${this.tableName}`
+        );
+        return rows;
     }
 
     async findById(id) {
-        return await this.db.query(
+        const connection = await this.getConnection();
+        const [rows] = await connection.query(
             `SELECT * FROM ${this.tableName} WHERE id = ?`,
             [id]
         );
+        return rows[0];
     }
 
     async create(data) {
+        const connection = await this.getConnection();
         const columns = Object.keys(data).join(', ');
+        const placeholders = Object.keys(data)
+            .map(() => '?')
+            .join(', ');
         const values = Object.values(data);
-        const placeholders = values.map(() => '?').join(', ');
 
-        const result = await this.db.query(
+        const [result] = await connection.query(
             `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders})`,
             values
         );
@@ -28,12 +41,13 @@ class BaseRepository {
     }
 
     async update(id, data) {
+        const connection = await this.getConnection();
         const setClause = Object.keys(data)
             .map((key) => `${key} = ?`)
             .join(', ');
         const values = [...Object.values(data), id];
 
-        const result = await this.db.query(
+        const [result] = await connection.query(
             `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`,
             values
         );
@@ -41,10 +55,12 @@ class BaseRepository {
     }
 
     async delete(id) {
-        return await this.db.query(
+        const connection = await this.getConnection();
+        const [result] = await connection.query(
             `DELETE FROM ${this.tableName} WHERE id = ?`,
             [id]
         );
+        return result;
     }
 
     // ページネーション用のメソッド
@@ -60,9 +76,10 @@ class BaseRepository {
         `;
 
         try {
+            const connection = await this.getConnection();
             const [[count], data] = await Promise.all([
-                this.db.query(countQuery),
-                this.db.query(dataQuery),
+                connection.query(countQuery),
+                connection.query(dataQuery),
             ]);
 
             return {
@@ -107,7 +124,8 @@ class BaseRepository {
 
         // limitとoffsetの値が数値であることを確認
         const params = [Number(limit), Number(offset)];
-        return await this.db.query(sql, params);
+        const connection = await this.getConnection();
+        return await connection.query(sql, params);
     }
 }
 

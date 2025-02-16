@@ -1,17 +1,18 @@
-const mysql = require('mysql2/promise');
 require('dotenv').config();
+const mysql = require('mysql2/promise');
 
 class DBConnection {
-    constructor() {
-        this.pool = mysql.createPool({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0,
-        });
+    static async getConnection() {
+        if (!DBConnection.connection) {
+            DBConnection.connection = await mysql.createConnection({
+                host: process.env.DB_HOST,
+                user: process.env.DB_USER,
+                password: process.env.DB_PASSWORD,
+                database: process.env.DB_NAME,
+            });
+            console.log(`[${new Date().toLocaleString()}] Connected to MySQL`);
+        }
+        return DBConnection.connection;
     }
 
     async query(sql, params = []) {
@@ -41,4 +42,4 @@ class DBConnection {
     }
 }
 
-module.exports = new DBConnection();
+module.exports = DBConnection;

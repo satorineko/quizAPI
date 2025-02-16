@@ -5,18 +5,31 @@ class ChoiceRepository extends BaseRepository {
         super('choices');
     }
 
-    async findByQuestionId(questionId) {
-        return await this.db.query(
-            `SELECT * FROM ${this.tableName} WHERE question_id = ?`,
+    async getChoicesByQuestionId(questionId) {
+        const connection = await this.getConnection();
+        const [rows] = await connection.query(
+            'SELECT * FROM choices WHERE question_id = ?',
             [questionId]
         );
+        return rows;
     }
 
-    async findCorrectChoice(questionId) {
-        return await this.db.query(
-            `SELECT * FROM ${this.tableName} WHERE question_id = ? AND is_correct = 1`,
+    async getCorrectChoice(questionId) {
+        const connection = await this.getConnection();
+        const [rows] = await connection.query(
+            'SELECT * FROM choices WHERE question_id = ? AND is_correct = 1',
             [questionId]
         );
+        return rows[0];
+    }
+
+    async deleteByQuestionId(questionId) {
+        const connection = await this.getConnection();
+        const [result] = await connection.query(
+            'DELETE FROM choices WHERE question_id = ?',
+            [questionId]
+        );
+        return result;
     }
 }
 

@@ -1,87 +1,96 @@
 const express = require('express');
 const router = express.Router();
 const QuestionRepository = require('../repositories/QuestionRepository');
+const ChoiceRepository = require('../repositories/ChoiceRepository');
+const AnswerRepository = require('../repositories/AnswerRepository');
 
-// 問題一覧取得（ページネーション付き）
+// バリデーションミドルウェア
+const validateFields = (requiredFields) => {
+    return (req, res, next) => {
+        const missingFields = requiredFields.filter(
+            (field) => req.body[field] === undefined
+        );
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                error: '必要なデータが不足しています',
+                missingFields,
+            });
+        }
+        next();
+    };
+};
+
+// 全ての質問を取得
 router.get('/', async (req, res) => {
-    const { page = 1, limit = 10, type } = req.query;
     try {
-        const questions = type
-            ? await QuestionRepository.findByTypePaginated(type, page, limit)
-            : await QuestionRepository.findAllWithDetailsPaginated(page, limit);
+        const questions = await QuestionRepository.getQuestionsWithStats();
         res.json(questions);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error getting questions:', error);
+        res.status(500).json({ error: 'データベースエラー' });
     }
 });
 
-// 問題詳細取得（関連データ含む）
+// 特定の質問を取得
 router.get('/:id', async (req, res) => {
     try {
-        const question = await QuestionRepository.findWithAllRelations(
+        const question = await QuestionRepository.getQuestionWithChoices(
             req.params.id
         );
         if (!question) {
-            return res.status(404).json({ error: '問題が見つかりません' });
+            return res.status(404).json({ error: '質問が見つかりません' });
         }
         res.json(question);
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error getting question:', error);
+        res.status(500).json({ error: 'データベースエラー' });
     }
 });
 
-// 問題作成
-router.post('/', async (req, res) => {
-    const { title, text, type, choices, answer, explanation, userId } =
-        req.body;
-
+// 新しい質問を作成
+router.post('/', validateFields(['text', 'type']), async (req, res) => {
     try {
-        await QuestionRepository.db.transaction(async (connection) => {
-            // 問題の作成
-            const question = await QuestionRepository.create({
-                title,
-                text,
-                type,
-                user_id: userId,
-            });
-
-            if (type === 'choice') {
-                // 選択肢の作成
-                for (const choice of choices) {
-                    await connection.execute(
-                        'INSERT INTO choices (question_id, choice_text, is_correct) VALUES (?, ?, ?)',
-                        [question.insertId, choice.text, choice.isCorrect]
-                    );
-                }
-            } else {
-                // テキスト回答の作成
-                await connection.execute(
-                    'INSERT INTO answers (question_id, answer_text) VALUES (?, ?)',
-                    [question.insertId, answer]
-                );
-            }
-
-            // 解説の作成
-            await connection.execute(
-                'INSERT INTO explanations (question_id, explanation_text) VALUES (?, ?)',
-                [question.insertId, explanation]
-            );
-        });
-
-        res.status(201).json({ message: '問題が作成されました' });
+        const { text, type } = req.body;
+        const result = await QuestionRepository.create({ text, type });
+        res.status(201).json({ id: result.insertId });
     } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Error creating question:', error);
+        res.status(500).json({ error: 'データベースエラー' });
     }
 });
 
-// 問題更新
-router.put('/:id', async (req, res) => {
-    // 実装の詳細は省略
+// 質問を更新
+router.put('/:id', validateFields(['text', 'type']), async (req, res) => {
+    try {
+        const { text, type } = req.body;
+        const result = await QuestionRepository.update(req.params.id, {
+            text,
+            type,
+        });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: '質問が見つかりません' });
+        }
+        res.json({ message: '質問が更新されました' });
+    } catch (error) {
+        console.error('Error updating question:', error);
+        res.status(500).json({ error: 'データベースエラー' });
+    }
 });
 
-// 問題削除
+// 質問を削除
 router.delete('/:id', async (req, res) => {
-    // 実装の詳細は省略
+    try {
+        await AnswerRepository.deleteByQuestionId(req.params.id);
+        await ChoiceRepository.deleteByQuestionId(req.params.id);
+        const result = await QuestionRepository.delete(req.params.id);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: '質問が見つかりません' });
+        }
+        res.json({ message: '質問が削除されました' });
+    } catch (error) {
+        console.error('Error deleting question:', error);
+        res.status(500).json({ error: 'データベースエラー' });
+    }
 });
 
 module.exports = router;

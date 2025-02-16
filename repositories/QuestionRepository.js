@@ -203,9 +203,7 @@ class QuestionRepository extends BaseRepository {
                 id: item.id,
                 text: item.text,
                 type: item.type,
-                choices: item.choices.filter(
-                    (choice) => choice.id != null
-                ),
+                choices: item.choices.filter((choice) => choice.id != null),
                 explanation_text: item.explanation_text,
                 created_at: item.created_at,
                 updated_at: item.updated_at,
@@ -224,6 +222,91 @@ class QuestionRepository extends BaseRepository {
             console.error('Error in findAllWithDetailsPaginated:', error);
             throw error;
         }
+    }
+
+    async getQuestionWithChoices(id) {
+        const dataQuery = `
+            SELECT 
+                q.id,
+                q.text,
+                q.type,
+                q.create_at as created_at,
+                q.update_at as updated_at,
+                COALESCE(
+                    JSON_ARRAYAGG(
+                        IF(c.id IS NOT NULL,
+                            JSON_OBJECT(
+                                'id', c.id,
+                                'text', c.text,
+                                'is_correct', c.is_correct
+                            ),
+                            NULL
+                        )
+                    ),
+                    JSON_ARRAY()
+                ) as choices,
+                e.explanation_text,
+                u.name as author_name
+            FROM questions q
+            LEFT JOIN choices c ON q.id = c.question_id
+            LEFT JOIN explanations e ON q.id = e.question_id
+            LEFT JOIN users u ON q.user_id = u.id
+            WHERE q.id = ?
+            GROUP BY 
+                q.id, 
+                q.text, 
+                q.type, 
+                q.create_at, 
+                q.update_at, 
+                e.explanation_text,
+                u.name
+        `;
+
+        try {
+            const connection = await this.getConnection();
+            const [rows] = await connection.query(dataQuery, [id]);
+
+            if (rows.length === 0) {
+                return null;
+            }
+
+            const question = {
+                id: rows[0].id,
+                text: rows[0].text,
+                type: rows[0].type,
+                choices: Array.isArray(rows[0].choices)
+                    ? rows[0].choices.filter((choice) => choice !== null)
+                    : [],
+                explanation_text: rows[0].explanation_text,
+                author_name: rows[0].author_name,
+                created_at: rows[0].created_at,
+                updated_at: rows[0].updated_at,
+            };
+
+            // 選択肢が存在しない場合のチェック
+            if (!question.choices.length) {
+                console.warn(`No choices found for question ID: ${id}`);
+            }
+
+            return question;
+        } catch (error) {
+            console.error('Error in getQuestionWithChoices:', error);
+            throw error;
+        }
+    }
+
+    async getQuestionsWithStats() {
+        const connection = await this.getConnection();
+        const [rows] = await connection.query(
+            `SELECT q.*, 
+                    COUNT(DISTINCT c.id) as choice_count,
+                    COUNT(DISTINCT a.id) as answer_count
+             FROM questions q
+             LEFT JOIN choices c ON q.id = c.question_id
+             LEFT JOIN answers a ON q.id = a.question_id
+             GROUP BY q.id`
+        );
+        return rows;
     }
 }
 
