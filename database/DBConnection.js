@@ -1,18 +1,24 @@
 require('dotenv').config();
 const mysql = require('mysql2/promise');
+const config = require('../config/database');
 
 class DBConnection {
-    static async getConnection() {
-        if (!DBConnection.connection) {
-            DBConnection.connection = await mysql.createConnection({
-                host: process.env.DB_HOST,
-                user: process.env.DB_USER,
-                password: process.env.DB_PASSWORD,
-                database: process.env.DB_NAME,
-            });
-            console.log(`[${new Date().toLocaleString()}] Connected to MySQL`);
+    constructor() {
+        this.pool = mysql.createPool({
+            ...config,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0,
+        });
+    }
+
+    async getConnection() {
+        try {
+            return await this.pool.getConnection();
+        } catch (error) {
+            console.error('Error getting connection from pool:', error);
+            throw error;
         }
-        return DBConnection.connection;
     }
 
     async query(sql, params = []) {
@@ -42,4 +48,5 @@ class DBConnection {
     }
 }
 
-module.exports = DBConnection;
+// シングルトンインスタンスとしてエクスポート
+module.exports = new DBConnection();

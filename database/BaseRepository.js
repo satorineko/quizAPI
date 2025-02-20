@@ -1,39 +1,47 @@
+const DBConnection = require('./DBConnection');
+
 class BaseRepository {
     constructor(tableName) {
         this.tableName = tableName;
-        this.db = require('./DBConnection');
+        this.db = DBConnection;
     }
 
-    async getConnection() {
-        return await this.db.getConnection();
+    async executeQuery(query, params = []) {
+        let connection;
+        try {
+            connection = await this.db.getConnection();
+            const [result] = await connection.query(query, params);
+            return result;
+        } catch (error) {
+            console.error('Database query error:', error);
+            throw error;
+        } finally {
+            if (connection) {
+                connection.release();
+            }
+        }
     }
 
     async findAll() {
-        const connection = await this.getConnection();
-        const [rows] = await connection.query(
-            `SELECT * FROM ${this.tableName}`
-        );
-        return rows;
+        return await this.executeQuery(`SELECT * FROM ${this.tableName}`);
     }
 
     async findById(id) {
-        const connection = await this.getConnection();
-        const [rows] = await connection.query(
+        const result = await this.executeQuery(
             `SELECT * FROM ${this.tableName} WHERE id = ?`,
             [id]
         );
-        return rows[0];
+        return result[0];
     }
 
     async create(data) {
-        const connection = await this.getConnection();
         const columns = Object.keys(data).join(', ');
         const placeholders = Object.keys(data)
             .map(() => '?')
             .join(', ');
         const values = Object.values(data);
 
-        const [result] = await connection.query(
+        const result = await this.executeQuery(
             `INSERT INTO ${this.tableName} (${columns}) VALUES (${placeholders})`,
             values
         );
@@ -41,13 +49,12 @@ class BaseRepository {
     }
 
     async update(id, data) {
-        const connection = await this.getConnection();
         const setClause = Object.keys(data)
             .map((key) => `${key} = ?`)
             .join(', ');
         const values = [...Object.values(data), id];
 
-        const [result] = await connection.query(
+        const result = await this.executeQuery(
             `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`,
             values
         );
@@ -55,8 +62,7 @@ class BaseRepository {
     }
 
     async delete(id) {
-        const connection = await this.getConnection();
-        const [result] = await connection.query(
+        const result = await this.executeQuery(
             `DELETE FROM ${this.tableName} WHERE id = ?`,
             [id]
         );
@@ -76,10 +82,9 @@ class BaseRepository {
         `;
 
         try {
-            const connection = await this.getConnection();
             const [[count], data] = await Promise.all([
-                connection.query(countQuery),
-                connection.query(dataQuery),
+                this.executeQuery(countQuery),
+                this.executeQuery(dataQuery),
             ]);
 
             return {
@@ -95,37 +100,6 @@ class BaseRepository {
             console.error('Pagination error:', error);
             throw error;
         }
-    }
-
-    // ページネーション付き問題一覧取得
-    async findAllWithDetailsPaginated(page, limit) {
-        const offset = (page - 1) * limit;
-        const sql = `
-            SELECT 
-                q.id,
-                q.text,
-                q.type,
-                q.create_at,
-                q.update_at,
-                JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'id', c.id,
-                        'text', c.text,
-                        'is_correct', c.is_correct
-                    )
-                ) as choices,
-                e.explanation_text as explanation
-            FROM questions q
-            LEFT JOIN choices c ON q.id = c.question_id
-            LEFT JOIN explanations e ON q.id = e.question_id
-            GROUP BY q.id, q.text, q.type, q.create_at, q.update_at, e.explanation_text
-            LIMIT ? OFFSET ?
-        `;
-
-        // limitとoffsetの値が数値であることを確認
-        const params = [Number(limit), Number(offset)];
-        const connection = await this.getConnection();
-        return await connection.query(sql, params);
     }
 }
 

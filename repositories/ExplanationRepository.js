@@ -5,11 +5,15 @@ class ExplanationRepository extends BaseRepository {
         super('explanations');
     }
 
+    // 問題IDに紐づく解説を取得
     async findByQuestionId(questionId) {
-        return await this.db.query(
-            `SELECT * FROM ${this.tableName} WHERE question_id = ?`,
-            [questionId]
-        );
+        const query = `
+            SELECT explanation_text
+            FROM ${this.tableName}
+            WHERE question_id = ?
+        `;
+        const [rows] = await this.executeQuery(query, [questionId]);
+        return rows;
     }
 }
 

@@ -6,7 +6,7 @@ class UserRepository extends BaseRepository {
     }
 
     async findByName(name) {
-        return await this.db.query(
+        return await this.executeQuery(
             `SELECT * FROM ${this.tableName} WHERE name = ?`,
             [name]
         );
@@ -24,7 +24,7 @@ class UserRepository extends BaseRepository {
             LEFT JOIN questions q ON u.id = q.user_id
             WHERE u.id = ?
         `;
-        return await this.db.query(query, [userId]);
+        return await this.executeQuery(query, [userId]);
     }
 }
 

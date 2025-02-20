@@ -5,18 +5,20 @@ class ChoiceRepository extends BaseRepository {
         super('choices');
     }
 
-    async getChoicesByQuestionId(questionId) {
-        const connection = await this.getConnection();
-        const [rows] = await connection.query(
-            'SELECT * FROM choices WHERE question_id = ?',
-            [questionId]
-        );
+    // 問題IDに紐づく選択肢を取得
+    async findByQuestionId(questionId) {
+        const query = `
+                SELECT id, text, is_correct
+                FROM ${this.tableName}
+                WHERE question_id = ?
+                ORDER BY id
+            `;
+        const [rows] = await this.executeQuery(query, [questionId]);
         return rows;
     }
 
     async getCorrectChoice(questionId) {
-        const connection = await this.getConnection();
-        const [rows] = await connection.query(
+        const [rows] = await this.executeQuery(
             'SELECT * FROM choices WHERE question_id = ? AND is_correct = 1',
             [questionId]
         );
@@ -24,8 +26,7 @@ class ChoiceRepository extends BaseRepository {
     }
 
     async deleteByQuestionId(questionId) {
-        const connection = await this.getConnection();
-        const [result] = await connection.query(
+        const [result] = await this.executeQuery(
             'DELETE FROM choices WHERE question_id = ?',
             [questionId]
         );
