@@ -19,7 +19,7 @@ class QuestionRepository extends BaseRepository {
             LEFT JOIN users u ON q.user_id = u.id
             WHERE q.id = ?
         `;
-        const [rows] = await this.executeQuery(query, [id]);
+        const rows = await this.executeQuery(query, [id]);
         return rows[0];
     }
 

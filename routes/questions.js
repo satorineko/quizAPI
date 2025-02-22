@@ -68,7 +68,7 @@ router.get('/:id', async (req, res) => {
         ]);
 
         if (!question) {
-            return res.status(404).json({ error: '質問が見つかりません' });
+            return res.status(404).json({ error: '問題が見つかりません' });
         }
 
         const response = {

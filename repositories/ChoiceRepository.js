@@ -13,7 +13,7 @@ class ChoiceRepository extends BaseRepository {
                 WHERE question_id = ?
                 ORDER BY id
             `;
-        const [rows] = await this.executeQuery(query, [questionId]);
+        const rows = await this.executeQuery(query, [questionId]);
         return rows;
     }
 
