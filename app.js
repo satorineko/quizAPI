@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const DBConnection = require('./database/DBConnection');
+const healthRoutes = require('./routes/health');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -23,6 +24,7 @@ app.use((err, req, res, next) => {
 
 // ルートの設定
 app.use('/api/questions', require('./routes/questions'));
+app.use('/health', healthRoutes);
 
 // データベース接続とサーバー起動
 async function startServer() {

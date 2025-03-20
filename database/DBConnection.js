@@ -46,6 +46,20 @@ class DBConnection {
             connection.release();
         }
     }
+
+    /**
+     * データベース接続が生きているかを確認する
+     * @returns {Promise<boolean>} 接続が生きていればtrue、そうでなければfalse
+     */
+    async ping() {
+        try {
+            await this.query('SELECT 1');
+            return true;
+        } catch (error) {
+            console.error('Database ping failed:', error);
+            return false;
+        }
+    }
 }
 
 // シングルトンインスタンスとしてエクスポート
