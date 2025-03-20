@@ -76,8 +76,9 @@ router.get('/:id', async (req, res) => {
             choices: choices || [],
             explanation_text: explanation?.explanation_text || null,
         };
-
-        res.json(response);
+        res.json({
+            data: response
+        });
     } catch (error) {
         console.error('Error getting question:', error);
         res.status(500).json({ error: 'データベースエラー' });

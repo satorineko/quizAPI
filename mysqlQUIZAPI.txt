@@ -1,0 +1,76 @@
+show databases;
+use quiz;
+show tables;
+desc answers;
+desc choices;
+desc explanations;
+desc questions;
+desc users;
+
+mysql> show tables;
++----------------+
+| Tables_in_quiz |
++----------------+
+| answers        |
+| choices        |
+| explanations   |
+| questions      |
+| users          |
++----------------+
+5 rows in set (0.00 sec)
+
+mysql> desc answers;
++-------------+--------------+------+-----+---------+----------------+
+| Field       | Type         | Null | Key | Default | Extra          |
++-------------+--------------+------+-----+---------+----------------+
+| id          | int          | NO   | PRI | NULL    | auto_increment |
+| question_id | int          | NO   | MUL | NULL    |                |
+| answer_text | varchar(100) | NO   |     | NULL    |                |
++-------------+--------------+------+-----+---------+----------------+
+3 rows in set (0.00 sec)
+
+mysql> desc choices;
++-------------+--------------+------+-----+---------+----------------+
+| Field       | Type         | Null | Key | Default | Extra          |
++-------------+--------------+------+-----+---------+----------------+
+| id          | int          | NO   | PRI | NULL    | auto_increment |
+| question_id | int          | NO   | MUL | NULL    |                |
+| choice_text | varchar(100) | NO   |     | NULL    |                |
+| is_correct  | tinyint(1)   | NO   |     | NULL    |                |
++-------------+--------------+------+-----+---------+----------------+
+4 rows in set (0.00 sec)
+
+mysql> desc explanations;
++------------------+---------------+------+-----+-------------------+-----------------------------------------------+
+| Field            | Type          | Null | Key | Default           | Extra                                         |
++------------------+---------------+------+-----+-------------------+-----------------------------------------------+
+| id               | int           | NO   | PRI | NULL              | auto_increment                                |
+| question_id      | int           | NO   | MUL | NULL              |                                               |
+| explanation_text | varchar(1000) | NO   |     | NULL              |                                               |
+| created_at       | datetime      | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED                             |
+| updated_at       | datetime      | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
++------------------+---------------+------+-----+-------------------+-----------------------------------------------+
+5 rows in set (0.00 sec)
+
+mysql> desc questions;
++-----------+-----------------------+------+-----+-------------------+-----------------------------------------------+
+| Field     | Type                  | Null | Key | Default           | Extra                                         |
++-----------+-----------------------+------+-----+-------------------+-----------------------------------------------+
+| id        | int                   | NO   | PRI | NULL              | auto_increment                                |
+| title     | varchar(100)          | YES  |     | NULL              |                                               |
+| text      | varchar(1000)         | NO   |     | NULL              |                                               |
+| type      | enum('choice','text') | NO   |     | NULL              |                                               |
+| create_at | datetime              | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED                             |
+| update_at | datetime              | YES  |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED on update CURRENT_TIMESTAMP |
+| user_id   | int                   | YES  | MUL | NULL              |                                               |
++-----------+-----------------------+------+-----+-------------------+-----------------------------------------------+
+7 rows in set (0.00 sec)
+
+mysql> desc users;
++-------+-------------+------+-----+---------+----------------+
+| Field | Type        | Null | Key | Default | Extra          |
++-------+-------------+------+-----+---------+----------------+
+| id    | int         | NO   | PRI | NULL    | auto_increment |
+| name  | varchar(30) | NO   |     | NULL    |                |
++-------+-------------+------+-----+---------+----------------+
+2 rows in set (0.00 sec)
