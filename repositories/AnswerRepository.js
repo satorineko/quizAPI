@@ -6,11 +6,11 @@ class AnswerRepository extends BaseRepository {
     }
 
     async getAnswerByQuestionId(questionId) {
-        const [rows] = await this.executeQuery(
+        const rows = await this.executeQuery(
             'SELECT * FROM answers WHERE question_id = ?',
             [questionId]
         );
-        return rows[0];
+        return rows;
     }
 
     async updateAnswerText(questionId, answerText) {
