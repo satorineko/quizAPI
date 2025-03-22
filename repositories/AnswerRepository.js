@@ -6,8 +6,7 @@ class AnswerRepository extends BaseRepository {
     }
 
     async getAnswerByQuestionId(questionId) {
-        const connection = await this.getConnection();
-        const [rows] = await connection.query(
+        const [rows] = await this.executeQuery(
             'SELECT * FROM answers WHERE question_id = ?',
             [questionId]
         );
@@ -15,8 +14,7 @@ class AnswerRepository extends BaseRepository {
     }
 
     async updateAnswerText(questionId, answerText) {
-        const connection = await this.getConnection();
-        const [result] = await connection.query(
+        const result = await this.executeQuery(
             'UPDATE answers SET answer_text = ? WHERE question_id = ?',
             [answerText, questionId]
         );
@@ -24,8 +22,7 @@ class AnswerRepository extends BaseRepository {
     }
 
     async deleteByQuestionId(questionId) {
-        const connection = await this.getConnection();
-        const [result] = await connection.query(
+        const result = await this.executeQuery(
             'DELETE FROM answers WHERE question_id = ?',
             [questionId]
         );

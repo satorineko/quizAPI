@@ -26,7 +26,7 @@ class ChoiceRepository extends BaseRepository {
     }
 
     async deleteByQuestionId(questionId) {
-        const [result] = await this.executeQuery(
+        const result = await this.executeQuery(
             'DELETE FROM choices WHERE question_id = ?',
             [questionId]
         );
