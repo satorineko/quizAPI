@@ -77,7 +77,7 @@ router.get('/:id', async (req, res) => {
             explanation_text: explanation?.explanation_text || null,
         };
         res.json({
-            data: response
+            data: response,
         });
     } catch (error) {
         console.error('Error getting question:', error);
@@ -88,9 +88,26 @@ router.get('/:id', async (req, res) => {
 // 新しい質問を作成
 router.post('/', validateFields(['text', 'type']), async (req, res) => {
     try {
-        const { text, type } = req.body;
+        const { text, type, choices } = req.body;
+
+        // 問題の作成
         const result = await QuestionRepository.create({ text, type });
-        res.status(201).json({ id: result.insertId });
+        const questionId = result.insertId;
+
+        // 選択肢の登録（choices配列が提供されている場合）
+        if (Array.isArray(choices) && choices.length > 0) {
+            for (const choice of choices) {
+                if (choice.text) {
+                    await ChoiceRepository.create({
+                        question_id: questionId,
+                        text: choice.text,
+                        is_correct: choice.is_correct ? 1 : 0,
+                    });
+                }
+            }
+        }
+
+        res.status(201).json({ id: questionId });
     } catch (error) {
         console.error('Error creating question:', error);
         res.status(500).json({ error: 'データベースエラー' });
